@@ -26,12 +26,13 @@
   --body:'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%}
+/* ukuran tetap untuk LMS: lebar 100%, tinggi 600px */
+html,body{width:100%;height:600px;overflow:hidden}
+body{position:relative;transform:translateZ(0)}
 body{
   font-family:var(--body);
   background:var(--bg);
   color:var(--ink);
-  overflow-x:hidden;
   -webkit-tap-highlight-color:transparent;
   -webkit-font-smoothing:antialiased;
 }
@@ -50,7 +51,7 @@ button{font:inherit;color:inherit}
 }
 #sky{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
 
-#app{position:relative;z-index:2;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+#app{position:relative;z-index:2;height:600px;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column}
 
 /* =========================================================
    TOPBAR
@@ -242,8 +243,8 @@ h2{font-size:clamp(20px,4.8vw,30px)}
 .portals{display:grid;grid-template-columns:repeat(2,1fr);gap:22px 14px;max-width:420px;margin:0 auto}
 @media (min-width:640px){.portals{grid-template-columns:repeat(4,1fr);max-width:920px;gap:20px}}
 
-.pslot{position:relative;display:flex;flex-direction:column;align-items:center;--pw:min(140px,18vh)}
-@media (min-width:640px){.pslot{--pw:min(185px,32vh)}}
+.pslot{position:relative;display:flex;flex-direction:column;align-items:center;--pw:min(140px,108px)}
+@media (min-width:640px){.pslot{--pw:min(185px,192px)}}
 .beam{
   position:absolute;left:50%;bottom:34px;width:70%;height:0;transform:translateX(-50%);
   background:linear-gradient(to top,var(--glow),transparent);filter:blur(6px);
@@ -439,6 +440,33 @@ footer{
   padding:6px 16px calc(12px + env(safe-area-inset-bottom));
 }
 
+/* ---------- penyesuaian layar tetap 600px ---------- */
+.topbar{padding:calc(8px + env(safe-area-inset-top)) 16px 6px}
+.screen{padding:4px 16px 10px}
+.hero{gap:9px}
+.emblem{width:min(132px,36vw);margin:4px 0 8px}
+.emblem .orb span{font-size:85%}
+.lead{font-size:14px;line-height:1.5}
+.name-form{gap:8px;margin-top:2px}
+.input{height:48px}
+.btn-primary{height:50px}
+.hint-err{min-height:14px}
+.portal-head{margin-bottom:8px}
+.portals{gap:4px 14px}
+.tray{margin-top:8px}
+footer{padding:4px 16px calc(8px + env(safe-area-inset-bottom))}
+@media (max-width:639px){
+  .pslot{--pw:76px}
+  .seal{gap:4px;padding-bottom:4px}
+  .glyph{width:40px;font-size:19px}
+  .glyph::before{inset:-5px}
+  .slot{min-height:36px;font-size:12px}
+}
+@media (max-width:480px){
+  .tray{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:8px 10px 8px 8px;font-size:12.5px;line-height:1.25}
+}
+
 /* =========================================================
    KEYFRAMES
    ========================================================= */
@@ -616,7 +644,7 @@ let playerName = '';
 
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-  window.scrollTo({ top:0, behavior:'instant' in window ? 'instant' : 'auto' });
+  $('#app').scrollTop = 0;
 }
 let toastTimer;
 function toast(msg){
@@ -814,7 +842,7 @@ bgmBtn.addEventListener('click', () => {
   const cols = PORTALS.map(p => p.c);
   function resize(){
     const d = Math.min(window.devicePixelRatio || 1, 2);
-    W = innerWidth; H = innerHeight;
+    W = document.body.clientWidth; H = document.body.clientHeight;
     cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
     const n = Math.min(220, Math.round(W * H / 5500));
     stars = Array.from({ length: n }, () => ({ x: Math.random()*W, y: Math.random()*H*.9, r: Math.random()*1.3+.2, p: Math.random()*6.3, s: .4+Math.random()*1.6 }));
@@ -1137,7 +1165,6 @@ async function enterPortal(slot, p){
     field.classList.remove('zoom');
     document.body.classList.add('in-game');
     $('#connectHost').hidden = false;
-    window.scrollTo(0, 0);
     ConnectGame.start(playerName, musicOn);
     await wait(300);
     $('#whiteout').classList.remove('on');
@@ -1191,7 +1218,7 @@ renderBgmBtn();
 *{box-sizing:border-box;margin:0;padding:0}
 :host{display:block}
 :host([hidden]){display:none!important}
-.game{min-height:100vh;min-height:100dvh;font-family:var(--font);font-size:15px;font-weight:500;color:var(--ink);background:var(--red);overflow-x:hidden;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+.game{height:600px;overflow-y:auto;scrollbar-width:thin;font-family:var(--font);font-size:15px;font-weight:500;color:var(--ink);background:var(--red);overflow-x:hidden;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
 button,input{font:inherit;color:inherit}
 h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 [hidden]{display:none!important}
@@ -1216,7 +1243,7 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 @media (max-width:360px){.brand span{display:none}}
 
 /* ---------- SHARED ---------- */
-.screen{display:none;width:100%;min-height:100vh;min-height:100dvh}
+.screen{display:none;width:100%;min-height:600px}
 .screen.active{display:flex;animation:fadeIn .5s var(--out)}
 .btn{
   display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;padding:8px 18px;border:0;border-radius:14px;cursor:pointer;
@@ -1247,7 +1274,7 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .err-msg{min-height:18px;margin:6px 0 4px;font-size:13px;font-weight:600;color:var(--bad)}
 
 /* ---------- 2. BANGUN & PINTU ---------- */
-#scrWake{position:relative;overflow:hidden;height:100vh;height:100dvh;min-height:520px;background:#7c6cf2}
+#scrWake{position:relative;overflow:hidden;height:600px;background:#7c6cf2}
 .room{position:absolute;inset:0}
 .bgsvg{position:absolute;inset:0;width:100%;height:100%}
 .haze{position:absolute;inset:0;background:#2b2d42;opacity:.7;pointer-events:none;z-index:4;transition:opacity 2.2s ease}
@@ -1281,7 +1308,7 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .iris{position:fixed;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;z-index:70;pointer-events:none;transform:scale(0);will-change:transform,opacity}
 
 /* ---------- 3. MAIN (full POV) ---------- */
-#scrPlay{position:relative;overflow:hidden;overflow:clip;height:100vh;height:100dvh;min-height:520px;transition:background-color .5s ease}
+#scrPlay{position:relative;overflow:hidden;overflow:clip;height:600px;transition:background-color .5s ease}
 .play{position:relative;z-index:2;height:100%;width:100%;display:flex;flex-direction:column;align-items:center;padding:62px 12px calc(26px + env(safe-area-inset-bottom))}
 .caption{flex:none;width:100%;max-width:560px;display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:16px;background:#fff;box-shadow:var(--soft)}
 .caption .lt{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:11px;font-weight:700;font-size:17px;background:var(--c)}
@@ -1678,7 +1705,7 @@ const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return
 const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]] = [b[j],b[i]]; } return b; };
 const reduced = false;   // animasi selalu aktif
 const wordHtml = c => c.key === 'I' ? 's<span class="l1">I</span>mak baik-baik' : `<span class="l1">${c.word[0]}</span>${esc(c.word.slice(1))}`;
-function showScreen(id){ ROOT.querySelectorAll('section.screen[id]').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0,0); }
+function showScreen(id){ ROOT.querySelectorAll('section.screen[id]').forEach(s => s.classList.toggle('active', s.id === id)); LAYER.scrollTop = 0; }
 let tt; function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1900); }
 function confetti(){
   const col = ['#ffc93c','#ffffff','#f25c54','#2ee6d6','#9b7bff'];
@@ -1696,7 +1723,7 @@ function shade(hex, amt){
 /* lingkaran transisi dari titik (x,y) */
 async function iris(x, y, color){
   const el = $('#iris');
-  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const r = Math.hypot(Math.max(x, document.body.clientWidth - x), Math.max(y, document.body.clientHeight - y));
   el.style.transition = 'none'; el.style.opacity = 1;
   el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.background = color;
   el.style.transform = 'scale(0)'; void el.offsetWidth;
@@ -2235,7 +2262,6 @@ function finish(){
   // mulai ulang animasi masuk
   ROOT.querySelectorAll('#scrEnd .end > *').forEach(e => { e.style.animation = 'none'; void e.offsetWidth; e.style.animation = ''; });
   showScreen('scrEnd');
-  window.scrollTo(0, 0);
   Sound.fanfare(); confetti();
   [0,1,2,3].forEach(i => setTimeout(() => Sound.badge(), 1300 + i * 150));
   setTimeout(() => { if ($('#scrEnd').classList.contains('active')) confetti(); }, 1600);
