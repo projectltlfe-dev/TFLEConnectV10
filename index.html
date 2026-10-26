@@ -440,6 +440,13 @@ footer{
   padding:6px 16px calc(12px + env(safe-area-inset-bottom));
 }
 
+/* ---------- petunjuk gestur drag & drop ---------- */
+.dnd-hint{position:fixed;left:0;top:0;z-index:60;pointer-events:none;opacity:0;will-change:transform,opacity}
+.dh-card{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 10px;border-radius:14px;font-weight:800;font-size:13px;line-height:1.25;color:var(--ink);background:rgba(44,39,102,.85);border:1px solid rgba(255,255,255,.55);box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.dh-card .grip{display:grid;grid-template-columns:repeat(2,3px);gap:3px;opacity:.6}
+.dh-card .grip i{width:3px;height:3px;border-radius:50%;background:#fff;display:block}
+.dh-hand{position:absolute;left:46%;top:52%;width:40px;height:40px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+
 /* ---------- penyesuaian layar tetap 600px ---------- */
 .topbar{padding:calc(8px + env(safe-area-inset-top)) 16px 6px}
 .screen{padding:4px 16px 10px}
@@ -612,11 +619,11 @@ body.in-game #app,body.in-game .backdrop,body.in-game #sky{display:none}
 const CONFIG = { activePortal: 0 };
 
 const PORTALS = [
-  { code:'Video 10', key:'C', name:'Connect',    upper:'CONNECT',    meaning:'Kenali & dengarkan tim', feel:'Saya dikenal',
+  { code:'Video 10', key:'C', name:'Connect',    upper:'CONNECT',    meaning:'Kenali Tim', feel:'Saya dikenal',
     tag:'“I Know You” · Saya Kenal Kamu', c:'#2ee6d6', c2:'#3a8dff', soft:'rgba(46,230,214,.12)',  glow:'rgba(46,230,214,.55)' },
   { code:'Video 11', key:'A', name:'Appreciate', upper:'APPRECIATE', meaning:'Hargai kontribusi tim',  feel:'Saya dihargai',
     tag:'Tim merasa: Saya Dihargai',      c:'#ffc24b', c2:'#ff7f2a', soft:'rgba(255,194,75,.12)',  glow:'rgba(255,194,75,.55)' },
-  { code:'Video 12', key:'R', name:'Respond',    upper:'RESPOND',    meaning:'Terima ide tim',         feel:'Saya didengar',
+  { code:'Video 12', key:'R', name:'Respond',    upper:'RESPOND',    meaning:'Dengarkan Tim',          feel:'Saya didengar',
     tag:'Tim merasa: Saya Didengar',      c:'#b98cff', c2:'#ff5fd2', soft:'rgba(185,140,255,.13)', glow:'rgba(185,140,255,.55)' },
   { code:'Video 13', key:'E', name:'Empower',    upper:'EMPOWER',    meaning:'Beri kepercayaan tim',   feel:'Saya dipercaya',
     tag:'Tim merasa: Saya Dipercaya',     c:'#ff7a59', c2:'#ff3d6e', soft:'rgba(255,122,89,.13)',  glow:'rgba(255,122,89,.55)' }
@@ -894,7 +901,48 @@ $('#nameForm').addEventListener('submit', e => {
   nameInput.blur();
   buildStage();
   showScreen('scrPortal');
+  setTimeout(startDndHint, 1400);
 });
+
+/* ---------- petunjuk gestur: tangan menyeret kartu ke arah segel ---------- */
+let dndHint = null;
+const HAND_SVG = '<svg class="dh-hand" viewBox="0 0 24 24" fill="#fff" stroke="#0b0a22" stroke-width="1.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5.5l4.2.9A2 2 0 0 1 17.8 13.4L17 19a2 2 0 0 1-2 1.7H11a2 2 0 0 1-1.6-.8L6 15.3a1.4 1.4 0 0 1 2-1.9z"/></svg>';
+function stopDndHint(){
+  if (!dndHint) return;
+  const el = dndHint.el; dndHint = null;
+  el.getAnimations().forEach(a => a.cancel());
+  el.remove();
+}
+function startDndHint(){
+  stopDndHint();
+  const tray = $('#tray'), field = $('#portals');
+  if (!$('#scrPortal').classList.contains('active') || matched > 0 || selectedCard || !tray.querySelector('.card')) return;
+  const el = document.createElement('div');
+  el.className = 'dnd-hint';
+  document.body.appendChild(el);
+  dndHint = { el };
+  const loop = () => {
+    if (!dndHint || dndHint.el !== el) return;
+    const card = tray.querySelector('.card:not(.used)');
+    if (!card){ stopDndHint(); return; }
+    const cr = card.getBoundingClientRect(), fr = field.getBoundingClientRect();
+    el.innerHTML = `<div class="dh-card" style="width:${cr.width}px">${card.innerHTML}</div>${HAND_SVG}`;
+    el.style.left = cr.left + 'px'; el.style.top = cr.top + 'px';
+    const dx = fr.left + fr.width / 2 - (cr.left + cr.width / 2);
+    const dy = fr.top + fr.height * .42 - (cr.top + cr.height / 2);
+    const a = el.animate([
+      { transform:'translate3d(0,0,0) scale(1)', opacity:0, offset:0 },
+      { transform:'translate3d(0,0,0) scale(1)', opacity:1, offset:.12 },
+      { transform:'translate3d(0,-4px,0) scale(1.06)', opacity:1, offset:.24 },
+      { transform:`translate3d(${dx}px,${dy}px,0) scale(1.06)`, opacity:1, offset:.72 },
+      { transform:`translate3d(${dx}px,${dy}px,0) scale(1)`, opacity:0, offset:1 }
+    ], { duration:2400, easing:'cubic-bezier(.45,0,.35,1)' });
+    a.onfinish = () => setTimeout(loop, 450);
+  };
+  loop();
+}
+$('#tray').addEventListener('pointerdown', stopDndHint, true);
+$('#tray').addEventListener('keydown', stopDndHint, true);
 
 /* =========================================================
    LAYAR 2 — GERBANG: menjodohkan + portal di satu halaman
@@ -1230,7 +1278,7 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .brand{display:flex;align-items:center;gap:7px;padding:8px 13px;font-weight:700;font-size:12px;letter-spacing:.12em}
 .brand i{width:8px;height:8px;border-radius:50%;background:var(--c);display:block}
 .mini-klik{display:flex;gap:2px;padding:4px}
-.mini-klik span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font-weight:700;font-size:13px;color:#c4c5d3;transition:background-color .35s ease,color .35s ease,box-shadow .35s ease}
+.mini-klik span{cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font-weight:700;font-size:13px;color:#c4c5d3;transition:background-color .35s ease,color .35s ease,box-shadow .35s ease}
 .mini-klik span.cur{color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .mini-klik span.on{color:var(--ink);background:var(--c);animation:popIn .5s var(--spring)}
 .snd{width:38px;height:38px;display:grid;place-items:center;cursor:pointer;border:0}
@@ -1238,6 +1286,20 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .snd .off{display:none}
 .snd.muted .on{display:none}
 .snd.muted .off{display:block}
+.mini-klik span:active{transform:scale(.9)}
+.mini-klik span.sel{box-shadow:0 0 0 3px rgba(255,201,60,.9)}
+.kpop{position:absolute;top:54px;left:50%;width:min(270px,calc(100% - 24px));z-index:45;padding:12px 14px 12px;border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 12px 30px rgba(20,20,40,.22);transform:translateX(-50%);animation:kpopIn .3s var(--spring)}
+.kpop::before{content:"";position:absolute;top:-6px;left:var(--ax,50%);width:12px;height:12px;margin-left:-6px;background:#fff;transform:rotate(45deg);border-radius:2px}
+.kpop .kh{display:flex;align-items:center;gap:10px}
+.kpop .kl{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px;background:var(--c)}
+.kpop .kl.off{background:#eef0f6;color:#9a9cb0}
+.kpop .kw{font-weight:700;font-size:15px;line-height:1.2}
+.kpop .kw .l1{color:#e0a400}
+.kpop .ks{font-size:11.5px;font-weight:600;color:#8a8ca0;margin-top:2px}
+.kpop .ki{margin-top:9px;font-size:13.5px;line-height:1.4;font-weight:600}
+.kpop .ki.lock{color:#8a8ca0;font-weight:500}
+@keyframes kpopIn{0%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.92)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+.hud.hide .kpop{display:none}
 .hud .brand,.hud .mini-klik{transition:opacity .4s ease}
 .hud.hide .brand,.hud.hide .mini-klik{opacity:0;pointer-events:none}
 @media (max-width:360px){.brand span{display:none}}
@@ -1506,6 +1568,7 @@ h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.01em}
 <header class="hud hide" id="hud">
   <div style="width:38px;flex:none" aria-hidden="true"></div>
   <div class="mini-klik pill" id="hudKlik" aria-label="Progres KLIK"></div>
+  <div class="kpop" id="kpop" role="tooltip" hidden></div>
   <button class="snd pill" id="snd" type="button" aria-label="Musik latar: nyala">
     <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M2 2l20 20"/></svg>
@@ -1633,7 +1696,7 @@ function sendLMSSignal(){
 const CASES = [
   {
     key:'K', word:'Kenali orangnya', insight:'Cari tahu, jangan berasumsi!',
-    name:'Ci Lina', area:'Area Oven', bg:'oven', color:'#f25c54',
+    name:'Bu Lina', area:'Area Oven', bg:'oven', color:'#f25c54',
     look:{ skin:'#fde2cb', wear:'cap', wc:'#eef0f6', shirt:'#ffffff', prop:'tablet', start:'worried', hair:'bob' },
     situ:'Checklist suhu oven hari ini masih kosong. Sudah 3 kali minggu ini.',
     clues:[
@@ -1642,12 +1705,12 @@ const CASES = [
     ],
     ask:'Apa langkah pertamamu?',
     opts:[
-      { ok:true, t:'Tanya Ci Lina langsung, bagian mana dari checklist tablet yang bikin repot.' },
-      { t:'Ingatkan Ci Lina dengan tegas bahwa checklist wajib diisi sebelum batch keluar.' }
+      { ok:true, t:'Tanya Bu Lina langsung, bagian mana dari checklist tablet yang bikin repot.' },
+      { t:'Ingatkan Bu Lina dengan tegas bahwa checklist wajib diisi sebelum batch keluar.' }
     ]
   },
   {
-    key:'L', word:'Luangkan perhatian', insight:'Perhatian kecil = berarti besar',
+    key:'L', word:'Luangkan perhatian', insight:'Perhatian sekecil apapun berarti besar',
     name:'Dimas', area:'Line Packing', bg:'conveyor', color:'#4d96ff',
     look:{ skin:'#e8a87c', wear:'cap', wc:'#ffc93c', shirt:'#ffffff', prop:'box', start:'worried' },
     situ:'Kamu mau ke rapat, 15 menit lagi. Dimas melirikmu, kayak mau ngomong.',
@@ -1663,16 +1726,16 @@ const CASES = [
   },
   {
     key:'I', word:'sImak baik-baik', insight:'Dengerin, bukan nyalahin!',
-    name:'Pak Joko', area:'Area Mixing', bg:'mixer', color:'#ffa62b',
-    look:{ skin:'#c98a5e', wear:'cap', wc:'#2ec4b6', shirt:'#ffffff', prop:'logbook', start:'serious', mustache:true },
-    situ:'Target adonan meleset 2 hari berturut-turut. Pak Joko menghampirimu.',
+    name:'Pak Fathin', area:'Area Mixing', bg:'mixer', color:'#ffa62b',
+    look:{ skin:'#c98a5e', wear:'cap', wc:'#2ec4b6', shirt:'#ffffff', prop:'logbook', start:'serious' },
+    situ:'Target adonan meleset 2 hari berturut-turut. Pak Fathin menghampirimu.',
     clues:[
       { title:'Logbook', text:'Mixer 2 makin lambat sejak Senin.', tag:'Mixer 2\nlambat' },
-      { title:'Tentang Joko', text:'Pendiam, jarang sekali mengeluh.', tag:'Jarang\nmengeluh' }
+      { title:'Tentang Fathin', text:'Pendiam, jarang sekali mengeluh.', tag:'Jarang\nmengeluh' }
     ],
     ask:'Gimana kamu merespons?',
     opts:[
-      { ok:true, t:'Biarkan Pak Joko cerita sampai selesai, lalu ulangi intinya.' },
+      { ok:true, t:'Biarkan Pak Fathin cerita sampai selesai, lalu ulangi intinya.' },
       { t:'Langsung beri solusi: minta teknisi servis mixer 2 hari ini.' }
     ]
   },
@@ -1965,7 +2028,37 @@ sndBtn.addEventListener('click', () => { if (!audioOn){ Sound.init(); audioOn = 
    ========================================================= */
 let playerName = '', idx = 0, done = [], opened = new Set(), pinned = 0, solved = false, busy = Promise.resolve();
 const hud = $('#hud');
-function renderHud(){ $('#hudKlik').innerHTML = CASES.map((c, i) => `<span class="${done[i] ? 'on' : i === idx ? 'cur' : ''}">${c.key}</span>`).join(''); }
+function renderHud(){ closeKpop(); $('#hudKlik').innerHTML = CASES.map((c, i) => `<span role="button" tabindex="0" data-i="${i}" aria-label="${c.key}: ${esc(c.word)}" class="${done[i] ? 'on' : i === idx ? 'cur' : ''}">${c.key}</span>`).join(''); }
+/* progres KLIK interaktif: ketuk huruf → penjelasan singkat */
+let kpopI = -1, kpopT;
+function closeKpop(){
+  const k = $('#kpop'); if (!k) return;
+  k.hidden = true; kpopI = -1; clearTimeout(kpopT);
+  ROOT.querySelectorAll('#hudKlik span.sel').forEach(e => e.classList.remove('sel'));
+}
+function openKpop(i){
+  if (kpopI === i){ closeKpop(); return; }
+  closeKpop();
+  const c = CASES[i], k = $('#kpop'), sp = $('#hudKlik').children[i];
+  const st = done[i] ? 'Sudah kamu kuasai ✓' : i === idx ? `Sedang dipelajari · ${esc(c.name)}` : 'Belum terbuka';
+  const locked = !done[i] && i !== idx;
+  k.innerHTML = `<div class="kh"><span class="kl${locked ? ' off' : ''}">${c.key}</span><div><div class="kw">${wordHtml(c)}</div><div class="ks">${st}</div></div></div>`
+    + (locked ? `<p class="ki lock">Temui anggota tim berikutnya untuk membuka huruf ini.</p>` : `<p class="ki">${esc(c.insight)}</p>`);
+  k.hidden = false; k.style.animation = 'none'; void k.offsetWidth; k.style.animation = '';
+  const hr = $('#hud').getBoundingClientRect(), sr = sp.getBoundingClientRect(), kr = k.getBoundingClientRect();
+  k.style.setProperty('--ax', (sr.left + sr.width / 2 - kr.left) + 'px');
+  sp.classList.add('sel'); kpopI = i;
+  Sound.pop(); vibrate(10);
+  kpopT = setTimeout(closeKpop, 4500);
+}
+$('#hudKlik').addEventListener('click', e => {
+  const sp = e.target.closest('span[data-i]'); if (sp) openKpop(+sp.dataset.i);
+});
+$('#hudKlik').addEventListener('keydown', e => {
+  const sp = e.target.closest('span[data-i]');
+  if (sp && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openKpop(+sp.dataset.i); }
+});
+LAYER.addEventListener('pointerdown', e => { if (kpopI >= 0 && !e.target.closest('#hudKlik,#kpop')) closeKpop(); });
 function lightHud(i){
   const s = $('#hudKlik').children[i];
   if (s){ s.className = 'on'; const r = s.getBoundingClientRect(); ring(r.left + r.width / 2, r.top + r.height / 2, '#2ee6d6'); burst(r.left + r.width / 2, r.top + r.height / 2, { n:8, dist:30, colors:['#2ee6d6','#ffc93c'] }); }
